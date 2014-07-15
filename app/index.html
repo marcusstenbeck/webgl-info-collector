@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>WebGL Info Collector</title>
+	<style type="text/css">
+		.success,
+		.fail {
+			display: none;
+		}
+
+		#support { font-weight: bold; }
+	</style>
+</head>
+<body>
+	<canvas id="thecanvas" width="10" height="10"></canvas>
+
+	<p>WebGL Support: <span id="support"></span></p>
+	<p class="success">Saved.</p>
+	<p class="fail">Could not save data, reload to try again...</p>
+
+	<script src="jquery.min.js"></script>
+	<script type="text/javascript">
+		function initContext(canv) {
+			var glInfo = {
+				support: '',
+				gl: {}
+			};
+
+			if (!!window.WebGLRenderingContext) {
+				var contextNames = ["experimental-webgl", "webgl", "moz-webgl", "webkit-3d"];
+				for (var i = 0; i < contextNames.length; i++) {
+					try {
+						context = canv.getContext(contextNames[i]);
+						if (context && typeof(context.getParameter) === "function") {
+							// WebGL is supported & enabled
+
+							glInfo.support = 'enabled';
+
+							glInfo.gl.VENDOR = context.getParameter(context.VENDOR);
+							glInfo.gl.VERSION = context.getParameter(context.VERSION);
+							glInfo.gl.SHADING_LANGUAGE_VERSION = context.getParameter(context.SHADING_LANGUAGE_VERSION);
+							glInfo.gl.RENDERER = context.getParameter(context.RENDERER);
+							glInfo.gl.EXTENSIONS = context.getSupportedExtensions();
+							glInfo.gl.SAMPLES = context.getParameter(context.SAMPLES);
+							glInfo.gl.MAX_VERTEX_TEXTURE_IMAGE_UNITS = context.getParameter(context.MAX_VERTEX_TEXTURE_IMAGE_UNITS);
+							glInfo.gl.MAX_VARYING_VECTORS = context.getParameter(context.MAX_VARYING_VECTORS);
+							glInfo.gl.MAX_CUBE_MAP_TEXTURE_SIZE = context.getParameter(context.MAX_CUBE_MAP_TEXTURE_SIZE);
+							glInfo.gl.DEPTH_BITS = context.getParameter(context.DEPTH_BITS);
+							glInfo.gl.MAX_VERTEX_ATTRIBS = context.getParameter(context.MAX_VERTEX_ATTRIBS);
+							glInfo.gl.MAX_VERTEX_UNIFORM_VECTORS = context.getParameter(context.MAX_VERTEX_UNIFORM_VECTORS);
+							glInfo.gl.MAX_RENDERBUFFER_SIZE = context.getParameter(context.MAX_RENDERBUFFER_SIZE);
+							glInfo.gl.SAMPLE_BUFFERS = context.getParameter(context.SAMPLE_BUFFERS);
+							glInfo.gl.MAX_FRAGMENT_UNIFORM_VECTORS = context.getParameter(context.MAX_FRAGMENT_UNIFORM_VECTORS);
+							glInfo.gl.MAX_TEXTURE_IMAGE_UNITS = context.getParameter(context.MAX_TEXTURE_IMAGE_UNITS);
+							glInfo.gl.MAX_COMBINED_TEXTURE_IMAGE_UNITS = context.getParameter(context.MAX_COMBINED_TEXTURE_IMAGE_UNITS);
+							glInfo.gl.ALIASED_LINE_WIDTH_RANGE = context.getParameter(context.ALIASED_LINE_WIDTH_RANGE);
+							glInfo.gl.MAX_TEXTURE_SIZE = context.getParameter(context.MAX_TEXTURE_SIZE);
+							glInfo.gl.STENCIL_BITS = context.getParameter(context.STENCIL_BITS);
+							glInfo.gl.SUBPIXEL_BITS = context.getParameter(context.SUBPIXEL_BITS);
+							glInfo.gl.ALIASED_POINT_SIZE_RANGE = context.getParameter(context.ALIASED_POINT_SIZE_RANGE);
+
+							break;
+						}
+					} catch (e){}
+				}
+				if (!context) {
+					glInfo.status = 'disabled';
+				}
+			}
+			else {
+				glInfo.status = 'not_supported';
+			}
+
+			// Get navigator info
+			glInfo.navigator = {
+				appCodeName: navigator.appCodeName,
+				appName: navigator.appName,
+				appVersion: navigator.appVersion,
+				cookieEnabled: navigator.cookieEnabled,
+				language: navigator.language,
+				onLine: navigator.onLine,
+				platform: navigator.platform,
+				userAgent: navigator.userAgent,
+				systemLanguage: navigator.systemLanguage
+			};
+
+			return glInfo;
+		}
+
+		$(document).ready(function() {
+			console.log('Ready');
+
+			console.log('Collecting data…');
+			var canv = document.getElementById('thecanvas');
+			var glInfo = initContext(canv);
+
+			console.log('… done collecting data:', glInfo);
+
+			var supportEl = $('#support');
+			supportEl.text(glInfo.support);
+
+			if(glInfo.support === 'enabled') {
+				supportEl.css('color', 'green');
+
+			} else if(glInfo.support === 'disabled') {
+				supportEl.css('color', 'orange');
+
+			} else if(glInfo.support === 'not_supported') {
+				supportEl.css('color', 'red');
+
+			}
+
+			console.log('Saving data…');
+
+			$.post('/api/1/collect', glInfo)
+				.done(function(response) {
+					console.log(response);
+					
+					$('.success').show();
+				})
+				.fail(function(response) {
+					console.log(response);
+					
+					$('.fail').show();
+				})
+				.always(function(response) {
+					console.log('Done. Please check for errors above.');
+				});
+		});
+	</script>
+</body>
+</html>
